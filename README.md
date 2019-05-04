@@ -1,11 +1,11 @@
 # peinfo-go
 
-This is a PE (Portable Executable) parser written in GoLang. I wanted to learn more about the PE format, specifically how the certificates were stored. What better way is there than to write some code.
+This is a PE (Portable Executable) parser written in GoLang. I wanted to learn more about the PE format, specifically how the certificates were stored. What better way is there than to write some code?
 
-This is a work in progress and will likely change.
+_This is a work in progress and will continue to change._
 
 Current state:
-- Some PE details
+- Displays a few PE details
 - Examines the certificate
 - Finds Version Info struct
 - Displays imports
@@ -15,6 +15,7 @@ TODO:
 - Re-write function for finding Version Info (currently written so I could better understand the structure)
 - Custom certificate stores
 
+## Example
 ```
 [user:~/peinfo-go\ > ./peinfo-go /tmp/Autoruns/autorunsc64.exe
 type: pe32+
@@ -37,3 +38,12 @@ Imports:
  - ImageList_ReplaceIcon:COMCTL32.dll
  ...
  ```
+ 
+## References
+- https://golang.org/pkg/debug/pe/
+- http://www.pelib.com/resources/luevel.txt
+- https://github.com/exiftool/exiftool/blob/master/lib/Image/ExifTool/EXE.pm
+- https://github.com/deptofdefense/SalSA/blob/master/pe.py
+- https://docs.microsoft.com/en-us/windows/desktop/debug/pe-format#resource-directory-entries
+- https://github.com/quarkslab/dreamboot/blob/31e155b06802dce94367c38ea93316f7cb86cb15/QuarksUBootkit/PeCoffLib.c
+- https://docs.microsoft.com/en-us/windows/desktop/Debug/pe-format#the-attribute-certificate-table-image-only
