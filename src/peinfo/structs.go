@@ -1,0 +1,71 @@
+package peinfo
+
+import (
+	"debug/pe"
+	"os"
+)
+
+type FileT struct {
+	OSFile  *os.File
+	PEFile  *pe.File
+	Verbose bool
+}
+
+type ResourceDirectoryD struct {
+	Characteristics      uint32
+	TimeDateStamp        uint32
+	MajorVersion         uint16
+	MinorVersion         uint16
+	NumberOfNamedEntries uint16
+	NumberOfIdEntries    uint16
+}
+
+type CertDetails struct {
+	Length          uint32
+	Revision        uint16
+	CertificateType uint16
+	DER             []byte
+}
+
+// typedef struct _IMAGE_RESOURCE_DIRECTORY_ENTRY {
+//     union {
+//         struct {
+//             DWORD NameOffset:31;
+//             DWORD NameIsString:1;
+//         };
+//         DWORD   Name;
+//         WORD    Id;
+//     };
+//     union {
+//         DWORD   OffsetToData;
+//         struct {
+//             DWORD   OffsetToDirectory:31;
+//             DWORD   DataIsDirectory:1;
+//         };
+//     };
+// } IMAGE_RESOURCE_DIRECTORY_ENTRY, *PIMAGE_RESOURCE_DIRECTORY_ENTRY;
+
+type ResourceDirectoryEntry struct {
+	Name         uint32
+	OffsetToData uint32
+}
+
+type ResourceDirectoryEntryNamed struct {
+	Name         uint32
+	OffsetToData uint32
+}
+
+/* Resource Directory Entry */
+// type ResourceDirectoryEntryT struct {
+// 	ResourceDirectoryEntry ResourceDirectoryEntry
+// 	FileOffset             uint32
+// 	Size                   uint32
+// 	DataIsDirectory        bool
+// }
+
+type _IMAGE_RESOURCE_DATA_ENTRY struct {
+	OffsetToData uint32
+	Size         uint32
+	CodePage     uint32
+	Reserved     uint32
+}
