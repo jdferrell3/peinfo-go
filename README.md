@@ -4,6 +4,8 @@ This is a PE (Portable Executable) parser written in GoLang. I wanted to learn m
 
 _This is a work in progress and will continue to change._
 
+This leverages the `debug/pe` package for parsing of the common headers/sections.
+
 Current state:
 - Displays a few PE details
 - Examines the certificate
