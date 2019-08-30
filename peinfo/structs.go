@@ -69,3 +69,19 @@ type _IMAGE_RESOURCE_DATA_ENTRY struct {
 	CodePage     uint32
 	Reserved     uint32
 }
+
+type VS_FIXEDFILEINFO struct {
+	DwSignature        uint32
+	DwStrucVersion     uint32
+	DwFileVersionMS    uint32
+	DwFileVersionLS    uint32
+	DwProductVersionMS uint32
+	DwProductVersionLS uint32
+	DwFileFlagsMask    uint32
+	DwFileFlags        uint32
+	DwFileOS           uint32
+	DwFileType         uint32
+	DwFileSubtype      uint32
+	DwFileDateMS       uint32
+	DwFileDateLS       uint32
+}

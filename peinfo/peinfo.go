@@ -12,6 +12,7 @@ import (
 // https://docs.microsoft.com/en-us/windows/desktop/debug/pe-format#resource-directory-entries
 // https://github.com/quarkslab/dreamboot/blob/31e155b06802dce94367c38ea93316f7cb86cb15/QuarksUBootkit/PeCoffLib.c
 // https://docs.microsoft.com/en-us/windows/desktop/Debug/pe-format#the-attribute-certificate-table-image-only
+// https://docs.microsoft.com/en-us/windows/desktop/menurc/vs-versioninfo
 
 var (
 	sizeofOptionalHeader32 = uint16(binary.Size(pe.OptionalHeader32{}))
