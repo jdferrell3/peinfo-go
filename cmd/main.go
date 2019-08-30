@@ -62,7 +62,7 @@ func main() {
 		fmt.Printf("\nVersion Info:\n")
 
 		for _, key := range keys {
-			fmt.Printf("  %s : %s\n", key, vi[key])
+			fmt.Printf(" %-20s : %s\n", key, vi[key])
 		}
 	} else {
 		fmt.Printf("Error getting version info: %s\n", err)
