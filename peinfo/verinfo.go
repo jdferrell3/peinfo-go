@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"debug/pe"
 	"encoding/binary"
+	"encoding/hex"
 	"fmt"
 	"os"
 )
@@ -181,6 +182,10 @@ func (f *FileT) GetVersionInfo() (vi map[string]string, keys []string, err error
 							return vi, keys, err
 						}
 						// fmt.Printf("%s\n", b)
+
+						if f.Verbose {
+							fmt.Printf("  %s\n", hex.Dump(b))
+						}
 
 						vi = parseVersionInfo(b, vi)
 						return vi, keys, nil

@@ -18,7 +18,9 @@ func checkErr(err error) {
 
 func main() {
 	var showImports bool
+	var verbose bool
 	flag.BoolVar(&showImports, "imports", false, "show imports")
+	flag.BoolVar(&verbose, "verbose", false, "verbose")
 	flag.Parse()
 
 	filePath := flag.Args()[0]
@@ -30,8 +32,10 @@ func main() {
 	checkErr(err)
 
 	file := peinfo.FileT{
-		OSFile: fh,
-		PEFile: tempPE}
+		OSFile:  fh,
+		PEFile:  tempPE,
+		Verbose: verbose,
+	}
 
 	t := "pe32"
 	if file.PEFile.Machine == pe.IMAGE_FILE_MACHINE_AMD64 {
@@ -63,53 +67,6 @@ func main() {
 	} else {
 		fmt.Printf("Error getting version info: %s\n", err)
 	}
-
-	// typedef struct {
-	// 	WORD             wLength;
-	// 	WORD             wValueLength;
-	// 	WORD             wType;
-	// 	WCHAR            szKey;
-	// 	WORD             Padding1;
-	// 	VS_FIXEDFILEINFO Value;
-	// 	WORD             Padding2;
-	// 	WORD             Children;
-	//   } VS_VERSIONINFO;
-	// r := bytes.NewReader(vi)
-	// var wLength uint16
-	// binary.Read(r, binary.LittleEndian, &wLength)
-	// fmt.Printf("wLength: %d\n", wLength)
-
-	// var wValueLength uint16
-	// binary.Read(r, binary.LittleEndian, &wValueLength)
-	// fmt.Printf("wValueLength: %d\n", wValueLength)
-
-	// var wType uint16
-	// binary.Read(r, binary.LittleEndian, &wType)
-	// fmt.Printf("wType: %d\n", wType)
-
-	// var s []byte
-	// for true {
-	// 	var c [2]byte
-	// 	binary.Read(r, binary.LittleEndian, &c)
-	// 	fmt.Printf("c: %x\n", c)
-	// 	if c[0] == 0x00 && c[1] == 0x00 {
-	// 		s = append(s, c[0])
-	// 		s = append(s, c[1])
-	// 		break
-	// 	}
-	// 	s = append(s, c[0])
-	// 	s = append(s, c[1])
-	// }
-	// fmt.Printf("%s\n", string(s))
-
-	// var padding [2]byte
-	// binary.Read(r, binary.LittleEndian, &padding)
-
-	// // fmt.Printf("  %s\n", hex.Dump(r))
-
-	// var fixedFileInfo peinfo.VS_FIXEDFILEINFO
-	// binary.Read(r, binary.LittleEndian, &fixedFileInfo)
-	// fmt.Printf("%x", fixedFileInfo.DwSignature)
 
 	if showImports {
 		fmt.Printf("\nImports:\n")
