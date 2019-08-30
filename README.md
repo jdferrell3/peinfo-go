@@ -13,7 +13,7 @@ Current state:
 - Displays imports
 
 TODO:
-- Actually Parse Version Info struct (currently displayed as raw binary)
+- ~~Actually Parse Version Info struct (currently displayed as raw binary)~~
 - Re-write function for finding Version Info (currently written so I could better understand the structure)
 - Custom certificate stores
 
