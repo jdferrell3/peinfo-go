@@ -79,7 +79,7 @@ func (f *FileT) VerifyCert() (cert *x509.Certificate, verified bool, err error) 
 	}
 
 	if c.CertificateType != WIN_CERT_TYPE_PKCS_SIGNED_DATA {
-		return nil, false, fmt.Errorf("only pkcs certificates supported")
+		return nil, false, fmt.Errorf("only pkcs certificates supported (cert type = %d)", c.CertificateType)
 	}
 
 	p7, err := pkcs7.Parse(c.DER)

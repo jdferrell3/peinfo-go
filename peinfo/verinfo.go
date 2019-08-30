@@ -1,7 +1,7 @@
 package peinfo
 
 import (
-	// "bytes"
+	"bytes"
 	"debug/pe"
 	"encoding/binary"
 	"fmt"
@@ -34,19 +34,59 @@ func (f *FileT) FindVerInfoOffset(fileOffset int64, sectionOffset uint32, sectio
 	return verInfoOffset, peoff.Len, nil
 }
 
-func (f *FileT) GetVersionInfo() (vi []byte, err error) {
+func (f *FileT) GetVersionInfo() (vi map[string]string, keys []string, err error) {
+	vi = map[string]string{
+		"BuildDate":        "",
+		"BuildVersion":     "",
+		"Comments":         "",
+		"CompanyName":      "",
+		"Copyright":        "",
+		"FileDescription":  "",
+		"FileVersion":      "",
+		"InternalName":     "",
+		"LegalCopyright":   "",
+		"LegalTrademarks":  "",
+		"OriginalFilename": "",
+		"PrivateBuild":     "",
+		"ProductName":      "",
+		"ProductVersion":   "",
+		"SpecialBuild":     "",
+		"langCharSet":      "",
+		// "varFileInfo":      "",
+	}
+	keys = []string{
+		"BuildDate",
+		"BuildVersion",
+		"Comments",
+		"CompanyName",
+		"Copyright",
+		"FileDescription",
+		"FileVersion",
+		"InternalName",
+		"LegalCopyright",
+		"LegalTrademarks",
+		"OriginalFilename",
+		"PrivateBuild",
+		"ProductName",
+		"ProductVersion",
+		"SpecialBuild",
+		"langCharSet",
+		// "varFileInfo"
+	}
+
 	section := f.PEFile.Section(".rsrc")
+	if section == nil {
+		return vi, keys, fmt.Errorf("resource section not found")
+	}
 	// fmt.Printf("%+v\n", section)
 
 	// Resource
 	_, err = f.OSFile.Seek(int64(0), os.SEEK_SET)
 	if nil != err {
-		return vi, err
+		return vi, keys, err
 	}
 
 	idd := f.FindDataDirectory(pe.IMAGE_DIRECTORY_ENTRY_RESOURCE)
-	// Why is the -0x6000 needed?
-	// VirtualAddress:602112 Offset:577536
 	idd.VirtualAddress -= (section.VirtualAddress - section.Offset)
 	if f.Verbose {
 		fmt.Printf("IMAGE_DIRECTORY_ENTRY_RESOURCE virtual address: %d\n", idd.VirtualAddress)
@@ -56,7 +96,7 @@ func (f *FileT) GetVersionInfo() (vi []byte, err error) {
 
 	pos, err := f.OSFile.Seek(int64(idd.VirtualAddress), os.SEEK_SET)
 	if nil != err {
-		return vi, err
+		return vi, keys, err
 	}
 	if pos != int64(idd.VirtualAddress) {
 		fmt.Errorf("did not seek to VirtualAddress")
@@ -65,7 +105,7 @@ func (f *FileT) GetVersionInfo() (vi []byte, err error) {
 	var table ResourceDirectoryD
 	err = binary.Read(f.OSFile, binary.LittleEndian, &table)
 	if nil != err {
-		return vi, err
+		return vi, keys, err
 	}
 	// fmt.Printf("table %+v\n", table)
 
@@ -74,7 +114,7 @@ func (f *FileT) GetVersionInfo() (vi []byte, err error) {
 		var entry ResourceDirectoryEntry
 		err = binary.Read(f.OSFile, binary.LittleEndian, &entry)
 		if nil != err {
-			return vi, err
+			return vi, keys, err
 		}
 
 		if entry.Name == RT_VERSION {
@@ -86,7 +126,7 @@ func (f *FileT) GetVersionInfo() (vi []byte, err error) {
 				var innerDir ResourceDirectoryD
 				err = binary.Read(f.OSFile, binary.LittleEndian, &innerDir)
 				if nil != err {
-					return vi, err
+					return vi, keys, err
 				}
 				// pos := f.Tell()
 				// fmt.Printf("level 1 innerDir %+v (file offset=%d)\n", innerDir, pos)
@@ -96,7 +136,7 @@ func (f *FileT) GetVersionInfo() (vi []byte, err error) {
 					var entry ResourceDirectoryEntry
 					err = binary.Read(f.OSFile, binary.LittleEndian, &entry)
 					if nil != err {
-						return vi, err
+						return vi, keys, err
 					}
 					// pos := f.Tell()
 					// fmt.Printf("item %d - level 2 buff %s (file offset=%d)\n", y, entry, pos)
@@ -110,7 +150,7 @@ func (f *FileT) GetVersionInfo() (vi []byte, err error) {
 					var innerDir ResourceDirectoryD
 					err = binary.Read(f.OSFile, binary.LittleEndian, &innerDir)
 					if nil != err {
-						return vi, err
+						return vi, keys, err
 					}
 					// pos = f.Tell()
 					// fmt.Printf("level 3 innerDir %+v (file offset=%d)\n", innerDir, pos)
@@ -120,7 +160,7 @@ func (f *FileT) GetVersionInfo() (vi []byte, err error) {
 						var entry ResourceDirectoryEntry
 						err = binary.Read(f.OSFile, binary.LittleEndian, &entry)
 						if nil != err {
-							return vi, err
+							return vi, keys, err
 						}
 						// pos := f.Tell()
 						// fmt.Printf("item %d - level 3 buff %s (file offset=%d)\n", y, entry, pos)
@@ -130,7 +170,7 @@ func (f *FileT) GetVersionInfo() (vi []byte, err error) {
 						off := int64(entry.OffsetToData + idd.VirtualAddress)
 						viPos, viLen, err := f.FindVerInfoOffset(off, section.SectionHeader.Offset, section.SectionHeader.VirtualAddress)
 						if nil != err {
-							return vi, err
+							return vi, keys, err
 						}
 						// fmt.Printf("VerInfo Struct filePos: 0x%x (%d)\n", viPos, viPos)
 
@@ -138,11 +178,12 @@ func (f *FileT) GetVersionInfo() (vi []byte, err error) {
 						b := make([]byte, viLen)
 						err = binary.Read(f.OSFile, binary.LittleEndian, &b)
 						if nil != err {
-							return vi, err
+							return vi, keys, err
 						}
 						// fmt.Printf("%s\n", b)
-						return b, nil
-						z += 1
+
+						vi = parseVersionInfo(b, vi)
+						return vi, keys, nil
 					}
 					y += 1
 				}
@@ -150,5 +191,50 @@ func (f *FileT) GetVersionInfo() (vi []byte, err error) {
 		}
 		x += 1
 	}
-	return vi, nil
+
+	return vi, keys, nil
+}
+
+func parseVersionInfo(vi []byte, versionInfo map[string]string) map[string]string {
+	// Grab everything after "StringFileInfo"
+	stringFileInfo := bytes.Split(vi, []byte{0x53, 0x0, 0x74, 0x0, 0x72, 0x0, 0x69, 0x0, 0x6e, 0x0, 0x67, 0x0, 0x46, 0x0, 0x69, 0x0, 0x6c, 0x0, 0x65, 0x0, 0x49, 0x0, 0x6e, 0x0, 0x66, 0x0, 0x6f})[1]
+
+	divide := bytes.Split(stringFileInfo, []byte{0x0, 0x1, 0x0})
+
+	langCharSet := trimSlice(divide[1])
+	versionInfo["langCharSet"] = string(langCharSet)
+
+	values := divide[2 : len(divide)-1]
+
+	// TODO: handle varFileInfo, currently contains binary information which chrome does not display
+	// varFileInfo := divide[len(divide)-1]
+	// versionInfo["varFileInfo"] = string(trimSlice(varFileInfo))
+
+	for _, element := range values {
+		temp := bytes.Split(element, []byte{0x0, 0x0, 0x0})
+		valueInfo := temp[:len(temp)-1]
+
+		if len(valueInfo) > 1 {
+			name := string(trimSlice(valueInfo[0]))
+			value := string(trimSlice(valueInfo[1]))
+
+			versionInfo[name] = value
+		}
+	}
+
+	return versionInfo
+}
+
+func trimSlice(nonTrimmed []byte) (trimmed []byte) {
+	for bytes.HasPrefix(nonTrimmed, []byte{0x0}) {
+		nonTrimmed = nonTrimmed[1:]
+	}
+
+	for i, val := range nonTrimmed {
+		if i%2 == 0 && val != 0x0 {
+			trimmed = append(trimmed, val)
+		}
+	}
+
+	return trimmed
 }

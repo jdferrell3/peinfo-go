@@ -1,10 +1,7 @@
 package main
 
 import (
-	"bytes"
 	"debug/pe"
-	"encoding/binary"
-	"encoding/hex"
 	"flag"
 	"fmt"
 	"log"
@@ -56,10 +53,13 @@ func main() {
 		fmt.Printf("  error: %s\n", err)
 	}
 
-	vi, err := file.GetVersionInfo()
+	vi, keys, err := file.GetVersionInfo()
 	if nil == err {
 		fmt.Printf("\nVersion Info:\n")
-		fmt.Printf("  %s\n", hex.Dump(vi))
+
+		for _, key := range keys {
+			fmt.Printf("  %s : %s\n", key, vi[key])
+		}
 	} else {
 		fmt.Printf("Error getting version info: %s\n", err)
 	}
@@ -74,42 +74,42 @@ func main() {
 	// 	WORD             Padding2;
 	// 	WORD             Children;
 	//   } VS_VERSIONINFO;
-	r := bytes.NewReader(vi)
-	var wLength uint16
-	binary.Read(r, binary.LittleEndian, &wLength)
-	fmt.Printf("wLength: %d\n", wLength)
+	// r := bytes.NewReader(vi)
+	// var wLength uint16
+	// binary.Read(r, binary.LittleEndian, &wLength)
+	// fmt.Printf("wLength: %d\n", wLength)
 
-	var wValueLength uint16
-	binary.Read(r, binary.LittleEndian, &wValueLength)
-	fmt.Printf("wValueLength: %d\n", wValueLength)
+	// var wValueLength uint16
+	// binary.Read(r, binary.LittleEndian, &wValueLength)
+	// fmt.Printf("wValueLength: %d\n", wValueLength)
 
-	var wType uint16
-	binary.Read(r, binary.LittleEndian, &wType)
-	fmt.Printf("wType: %d\n", wType)
+	// var wType uint16
+	// binary.Read(r, binary.LittleEndian, &wType)
+	// fmt.Printf("wType: %d\n", wType)
 
-	var s []byte
-	for true {
-		var c [2]byte
-		binary.Read(r, binary.LittleEndian, &c)
-		fmt.Printf("c: %x\n", c)
-		if c[0] == 0x00 && c[1] == 0x00 {
-			s = append(s, c[0])
-			s = append(s, c[1])
-			break
-		}
-		s = append(s, c[0])
-		s = append(s, c[1])
-	}
-	fmt.Printf("%s\n", string(s))
+	// var s []byte
+	// for true {
+	// 	var c [2]byte
+	// 	binary.Read(r, binary.LittleEndian, &c)
+	// 	fmt.Printf("c: %x\n", c)
+	// 	if c[0] == 0x00 && c[1] == 0x00 {
+	// 		s = append(s, c[0])
+	// 		s = append(s, c[1])
+	// 		break
+	// 	}
+	// 	s = append(s, c[0])
+	// 	s = append(s, c[1])
+	// }
+	// fmt.Printf("%s\n", string(s))
 
-	var padding [2]byte
-	binary.Read(r, binary.LittleEndian, &padding)
+	// var padding [2]byte
+	// binary.Read(r, binary.LittleEndian, &padding)
 
-	// fmt.Printf("  %s\n", hex.Dump(r))
+	// // fmt.Printf("  %s\n", hex.Dump(r))
 
-	var fixedFileInfo peinfo.VS_FIXEDFILEINFO
-	binary.Read(r, binary.LittleEndian, &fixedFileInfo)
-	fmt.Printf("%x", fixedFileInfo.DwSignature)
+	// var fixedFileInfo peinfo.VS_FIXEDFILEINFO
+	// binary.Read(r, binary.LittleEndian, &fixedFileInfo)
+	// fmt.Printf("%x", fixedFileInfo.DwSignature)
 
 	if showImports {
 		fmt.Printf("\nImports:\n")
