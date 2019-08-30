@@ -43,6 +43,7 @@ func main() {
 	}
 	fmt.Printf("type: %s\n", t)
 
+	fmt.Printf("TimeDateStamp: %v\n", file.GetTimeDateStamp())
 	fmt.Printf("Characteristics: %v\n", file.GetCharacteristics())
 	fmt.Printf("Subsystem: %v\n", file.GetImageSubSystem())
 
@@ -51,6 +52,8 @@ func main() {
 		fmt.Printf("\nCert:\n")
 		fmt.Printf("  subject: %v\n", cert.Subject)
 		fmt.Printf("  issuer: %v\n", cert.Issuer)
+		fmt.Printf("  not before: %v\n", cert.NotBefore)
+		fmt.Printf("  not after: %v\n", cert.NotAfter)
 		fmt.Printf("  verified: %v\n", verified)
 	}
 	if nil != err {

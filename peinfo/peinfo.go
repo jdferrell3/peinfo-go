@@ -3,7 +3,9 @@ package peinfo
 import (
 	"debug/pe"
 	"encoding/binary"
+	"fmt"
 	"os"
+	"time"
 )
 
 // http://www.pelib.com/resources/luevel.txt
@@ -78,6 +80,15 @@ func (f *FileT) GetCharacteristics() []string {
 	}
 
 	return characteristics
+}
+
+func (f *FileT) GetTimeDateStamp() string {
+	// i, err := strconv.ParseInt(f.PEFile.FileHeader.TimeDateStamp, 10, 64)
+	// if err != nil {
+	// 	panic(err)
+	// }
+	tm := time.Unix(int64(f.PEFile.FileHeader.TimeDateStamp), 0)
+	return fmt.Sprintf("%s", tm.UTC())
 }
 
 func (f *FileT) FindDataDirectory(imageDirectoryEntryType int) (idd ImageDirectoryT) {

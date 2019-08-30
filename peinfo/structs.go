@@ -6,9 +6,10 @@ import (
 )
 
 type FileT struct {
-	OSFile  *os.File
-	PEFile  *pe.File
-	Verbose bool
+	OSFile      *os.File
+	PEFile      *pe.File
+	ExtractCert bool
+	Verbose     bool
 }
 
 type ResourceDirectoryD struct {
