@@ -23,6 +23,11 @@ func main() {
 	flag.BoolVar(&verbose, "verbose", false, "verbose")
 	flag.Parse()
 
+	if len(flag.Args()) == 0 {
+		fmt.Printf("Please specify PE file.\n\n")
+		os.Exit(1)
+	}
+
 	filePath := flag.Args()[0]
 
 	fh, err := os.Open(filePath)
