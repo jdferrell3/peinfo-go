@@ -37,16 +37,13 @@ func main() {
 	checkErr(err)
 
 	file := peinfo.FileT{
-		OSFile:  fh,
-		PEFile:  tempPE,
-		Verbose: verbose,
+		OSFile:      fh,
+		PEFile:      tempPE,
+		Verbose:     verbose,
+		ExtractCert: true,
 	}
 
-	t := "pe32"
-	if file.PEFile.Machine == pe.IMAGE_FILE_MACHINE_AMD64 {
-		t = "pe32+"
-	}
-	fmt.Printf("type: %s\n", t)
+	fmt.Printf("type: %s\n", file.GetPEType())
 
 	fmt.Printf("TimeDateStamp: %v\n", file.GetTimeDateStamp())
 	fmt.Printf("Characteristics: %v\n", file.GetCharacteristics())

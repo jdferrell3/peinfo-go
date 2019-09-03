@@ -38,6 +38,14 @@ func (f *FileT) HeaderMagic() uint16 {
 	return f.PEFile.OptionalHeader.(*pe.OptionalHeader32).Magic
 }
 
+func (f *FileT) GetPEType() string {
+	t := "pe32"
+	if f.PEFile.Machine == pe.IMAGE_FILE_MACHINE_AMD64 {
+		t = "pe32+"
+	}
+	return t
+}
+
 func (f *FileT) GetImageSubSystem() string {
 	pe64 := f.PEFile.Machine == pe.IMAGE_FILE_MACHINE_AMD64
 

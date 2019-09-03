@@ -82,6 +82,12 @@ func (f *FileT) VerifyCert() (cert *x509.Certificate, verified bool, err error) 
 		return nil, false, fmt.Errorf("only pkcs certificates supported (cert type = %d)", c.CertificateType)
 	}
 
+	if f.ExtractCert {
+		f, _ := os.Create("cert")
+		defer f.Close()
+		_, _ = f.Write(c.DER)
+	}
+
 	p7, err := pkcs7.Parse(c.DER)
 	if nil != err {
 		return nil, false, err
