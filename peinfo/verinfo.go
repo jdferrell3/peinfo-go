@@ -212,12 +212,18 @@ func parseVersionInfo(vi []byte, versionInfo map[string]string) (map[string]stri
 	langCharSet := trimSlice(divide[1])
 	versionInfo["langCharSet"] = string(langCharSet)
 
-	if len(divide) < 2 {
+	if len(divide) < 3 {
 		err := fmt.Errorf("VersionInfo slice too small")
 		return versionInfo, err
 	}
 
-	values := divide[2 : len(divide)-1]
+	end := len(divide) - 1
+	if end < 2 {
+		err := fmt.Errorf("slice end less than start")
+		return versionInfo, err
+	}
+
+	values := divide[2:end]
 
 	// TODO: handle varFileInfo, currently contains binary information which chrome does not display
 	// varFileInfo := divide[len(divide)-1]
