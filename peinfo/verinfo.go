@@ -187,7 +187,10 @@ func (f *FileT) GetVersionInfo() (vi map[string]string, keys []string, err error
 							fmt.Printf("  %s\n", hex.Dump(b))
 						}
 
-						vi = parseVersionInfo(b, vi)
+						vi, err = parseVersionInfo(b, vi)
+						if nil != err {
+							return vi, keys, err
+						}
 						return vi, keys, nil
 					}
 					y += 1
@@ -200,7 +203,7 @@ func (f *FileT) GetVersionInfo() (vi map[string]string, keys []string, err error
 	return vi, keys, nil
 }
 
-func parseVersionInfo(vi []byte, versionInfo map[string]string) map[string]string {
+func parseVersionInfo(vi []byte, versionInfo map[string]string) (map[string]string, error) {
 	// Grab everything after "StringFileInfo"
 	stringFileInfo := bytes.Split(vi, []byte{0x53, 0x0, 0x74, 0x0, 0x72, 0x0, 0x69, 0x0, 0x6e, 0x0, 0x67, 0x0, 0x46, 0x0, 0x69, 0x0, 0x6c, 0x0, 0x65, 0x0, 0x49, 0x0, 0x6e, 0x0, 0x66, 0x0, 0x6f})[1]
 
@@ -208,6 +211,11 @@ func parseVersionInfo(vi []byte, versionInfo map[string]string) map[string]strin
 
 	langCharSet := trimSlice(divide[1])
 	versionInfo["langCharSet"] = string(langCharSet)
+
+	if len(divide) < 2 {
+		err := fmt.Errorf("VersionInfo slice too small")
+		return versionInfo, err
+	}
 
 	values := divide[2 : len(divide)-1]
 
@@ -227,7 +235,7 @@ func parseVersionInfo(vi []byte, versionInfo map[string]string) map[string]strin
 		}
 	}
 
-	return versionInfo
+	return versionInfo, nil
 }
 
 func trimSlice(nonTrimmed []byte) (trimmed []byte) {
