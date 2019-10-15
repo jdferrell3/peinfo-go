@@ -212,6 +212,7 @@ func parseVersionInfo(vi []byte, versionInfo map[string]string) (map[string]stri
 	langCharSet := trimSlice(divide[1])
 	versionInfo["langCharSet"] = string(langCharSet)
 
+	// check for slice out of bounds
 	if len(divide) < 3 {
 		err := fmt.Errorf("VersionInfo slice too small")
 		return versionInfo, err
