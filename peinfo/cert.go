@@ -75,7 +75,8 @@ func (f *FileT) VerifyCert() (cert *x509.Certificate, verified bool, err error) 
 
 	c, err := readCert(f.OSFile, int64(idd.VirtualAddress), int64(idd.Size))
 	if nil != err {
-		log.Fatalf("readCert failed: %s", err)
+		err = fmt.Errorf("readCert failed: %s", err)
+		return nil, false, err
 	}
 
 	if c.CertificateType != WIN_CERT_TYPE_PKCS_SIGNED_DATA {
