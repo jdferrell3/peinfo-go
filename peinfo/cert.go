@@ -6,7 +6,6 @@ import (
 	"debug/pe"
 	"encoding/binary"
 	"fmt"
-	"log"
 	"os"
 
 	// "github.com/fullsailor/pkcs7"
