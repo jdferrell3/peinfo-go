@@ -83,7 +83,7 @@ func (f *FileT) VerifyCert() (cert *x509.Certificate, verified bool, err error) 
 	}
 
 	if f.ExtractCert {
-		f, _ := os.Create("cert")
+		f, _ := os.Create(fmt.Sprintf("%s.cer", f.FileName))
 		defer f.Close()
 		_, _ = f.Write(c.DER)
 	}

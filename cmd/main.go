@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 
 	"github.com/jdferrell3/peinfo-go/peinfo"
 )
@@ -17,8 +18,10 @@ func checkErr(err error) {
 }
 
 func main() {
+	var extractCert bool
 	var showImports bool
 	var verbose bool
+	flag.BoolVar(&extractCert, "extractCert", false, "extract cert from binary")
 	flag.BoolVar(&showImports, "imports", false, "show imports")
 	flag.BoolVar(&verbose, "verbose", false, "verbose")
 	flag.Parse()
@@ -37,10 +40,11 @@ func main() {
 	checkErr(err)
 
 	file := peinfo.FileT{
+		FileName:    filepath.Base(filePath),
 		OSFile:      fh,
 		PEFile:      tempPE,
 		Verbose:     verbose,
-		ExtractCert: true,
+		ExtractCert: extractCert,
 	}
 
 	fmt.Printf("type: %s\n", file.GetPEType())

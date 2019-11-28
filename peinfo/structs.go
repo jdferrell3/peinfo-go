@@ -6,6 +6,7 @@ import (
 )
 
 type FileT struct {
+	FileName    string
 	OSFile      *os.File
 	PEFile      *pe.File
 	ExtractCert bool
