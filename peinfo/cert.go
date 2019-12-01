@@ -95,29 +95,86 @@ func (cfg *ConfigT) VerifyCert(validateExpiredChain bool) (cert *x509.Certificat
 		return nil, false, expired, fmt.Errorf("only pkcs certificates supported (cert type = %d)", c.CertificateType)
 	}
 
-	if f.ExtractCert {
-		f, _ := os.Create(fmt.Sprintf("%s.cer", f.FileName))
+	if cfg.ExtractCert {
+		f, _ := os.Create(fmt.Sprintf("%s.cer", cfg.FileName))
 		defer f.Close()
 		_, _ = f.Write(c.DER)
 	}
 
 	p7, err := pkcs7.Parse(c.DER)
 	if nil != err {
-		return nil, false, err
+		return nil, false, expired, err
 	}
 
 	cert = p7.GetOnlySigner()
 
-	cp, err := x509.SystemCertPool()
+	cp, err := getCertPool(cfg.RootCertDir)
 	if nil != err {
-		return nil, false, err
+		return nil, false, expired, err
 	}
-	// cp := x509.NewCertPool()
 
-	err = p7.VerifyWithChain(cp)
+	expired, err = p7.VerifyWithChain(cp, validateExpiredChain)
 	if nil == err {
 		verified = true
 	}
 
-	return cert, verified, err
+	for _, url := range cert.CRLDistributionPoints {
+		revoked, ok, err := certIsRevokedCRL(cert, url)
+		if !revoked && !ok {
+			return cert, false, expired, err
+		}
+		if revoked && ok {
+			return cert, false, expired, fmt.Errorf("cert revoked: %v", err)
+		}
+		if revoked && !ok {
+			return cert, false, expired, err
+		}
+
+	}
+
+	return cert, verified, expired, err
+}
+
+func getCertPool(certDir string) (*x509.CertPool, error) {
+	var cp *x509.CertPool
+
+	// no CA store specifid, use system pool
+	if certDir == "" {
+		cp, err := x509.SystemCertPool()
+		if nil != err {
+			return nil, err
+		}
+		return cp, nil
+	}
+
+	cp = x509.NewCertPool()
+
+	files, err := ioutil.ReadDir(certDir)
+	if nil != err {
+		return nil, err
+	}
+
+	appendedCert := false
+	for _, file := range files {
+		if !file.IsDir() {
+			ext := filepath.Ext(file.Name())
+			if ext == ".cer" || ext == ".crt" {
+				dat, err := ioutil.ReadFile(filepath.Join(certDir, file.Name()))
+				if nil != err {
+					return cp, err
+				}
+				if !cp.AppendCertsFromPEM(dat) {
+					err = fmt.Errorf("failed to append certs")
+					return cp, err
+				}
+				appendedCert = true
+			}
+		}
+	}
+
+	if !appendedCert {
+		return nil, fmt.Errorf("no CA certs added to pool")
+	}
+
+	return cp, nil
 }

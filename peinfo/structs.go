@@ -5,12 +5,13 @@ import (
 	"os"
 )
 
-type FileT struct {
+type ConfigT struct {
 	FileName    string
 	OSFile      *os.File
 	PEFile      *pe.File
 	ExtractCert bool
 	Verbose     bool
+	RootCertDir string
 }
 
 type ResourceDirectoryD struct {
