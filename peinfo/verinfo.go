@@ -13,8 +13,8 @@ const (
 	RT_VERSION = 16
 )
 
-func (f *FileT) FindVerInfoOffset(fileOffset int64, sectionOffset uint32, sectionVirtualAddress uint32) (verInfoOffset int64, len uint32, err error) {
-	pos, _ := f.OSFile.Seek(fileOffset, os.SEEK_SET)
+func (cfg *ConfigT) FindVerInfoOffset(fileOffset int64, sectionOffset uint32, sectionVirtualAddress uint32) (verInfoOffset int64, len uint32, err error) {
+	pos, _ := cfg.OSFile.Seek(fileOffset, os.SEEK_SET)
 	if pos != fileOffset {
 		return 0, 0, fmt.Errorf("did not seek to offset")
 	}
@@ -25,7 +25,7 @@ func (f *FileT) FindVerInfoOffset(fileOffset int64, sectionOffset uint32, sectio
 		D2  uint32
 	}
 	var peoff VerInfoDetailsT
-	err = binary.Read(f.OSFile, binary.LittleEndian, &peoff)
+	err = binary.Read(cfg.OSFile, binary.LittleEndian, &peoff)
 	if nil != err {
 		return verInfoOffset, len, err
 	}
@@ -35,7 +35,7 @@ func (f *FileT) FindVerInfoOffset(fileOffset int64, sectionOffset uint32, sectio
 	return verInfoOffset, peoff.Len, nil
 }
 
-func (f *FileT) GetVersionInfo() (vi map[string]string, keys []string, err error) {
+func (cfg *ConfigT) GetVersionInfo() (vi map[string]string, keys []string, err error) {
 	vi = map[string]string{
 		"BuildDate":        "",
 		"BuildVersion":     "",
@@ -75,27 +75,27 @@ func (f *FileT) GetVersionInfo() (vi map[string]string, keys []string, err error
 		// "varFileInfo"
 	}
 
-	section := f.PEFile.Section(".rsrc")
+	section := cfg.PEFile.Section(".rsrc")
 	if section == nil {
 		return vi, keys, fmt.Errorf("resource section not found")
 	}
 	// fmt.Printf("%+v\n", section)
 
 	// Resource
-	_, err = f.OSFile.Seek(int64(0), os.SEEK_SET)
+	_, err = cfg.OSFile.Seek(int64(0), os.SEEK_SET)
 	if nil != err {
 		return vi, keys, err
 	}
 
-	idd := f.FindDataDirectory(pe.IMAGE_DIRECTORY_ENTRY_RESOURCE)
+	idd := cfg.FindDataDirectory(pe.IMAGE_DIRECTORY_ENTRY_RESOURCE)
 	idd.VirtualAddress -= (section.VirtualAddress - section.Offset)
-	if f.Verbose {
+	if cfg.Verbose {
 		fmt.Printf("IMAGE_DIRECTORY_ENTRY_RESOURCE virtual address: %d\n", idd.VirtualAddress)
 		fmt.Printf("IMAGE_DIRECTORY_ENTRY_RESOURCE size: %d\n", idd.Size)
 		fmt.Printf("IMAGE_DIRECTORY_ENTRY_RESOURCE image base: %d\n", idd.ImageBase)
 	}
 
-	pos, err := f.OSFile.Seek(int64(idd.VirtualAddress), os.SEEK_SET)
+	pos, err := cfg.OSFile.Seek(int64(idd.VirtualAddress), os.SEEK_SET)
 	if nil != err {
 		return vi, keys, err
 	}
@@ -104,7 +104,7 @@ func (f *FileT) GetVersionInfo() (vi map[string]string, keys []string, err error
 	}
 
 	var table ResourceDirectoryD
-	err = binary.Read(f.OSFile, binary.LittleEndian, &table)
+	err = binary.Read(cfg.OSFile, binary.LittleEndian, &table)
 	if nil != err {
 		return vi, keys, err
 	}
@@ -113,7 +113,7 @@ func (f *FileT) GetVersionInfo() (vi map[string]string, keys []string, err error
 	x := 0
 	for x < int(table.NumberOfNamedEntries+table.NumberOfIdEntries) {
 		var entry ResourceDirectoryEntry
-		err = binary.Read(f.OSFile, binary.LittleEndian, &entry)
+		err = binary.Read(cfg.OSFile, binary.LittleEndian, &entry)
 		if nil != err {
 			return vi, keys, err
 		}
@@ -122,10 +122,10 @@ func (f *FileT) GetVersionInfo() (vi map[string]string, keys []string, err error
 			// Directory
 			if (entry.OffsetToData&0x80000000)>>31 == 1 {
 				new := entry.OffsetToData&0x7fffffff + idd.VirtualAddress
-				f.OSFile.Seek(int64(new), os.SEEK_SET)
+				cfg.OSFile.Seek(int64(new), os.SEEK_SET)
 
 				var innerDir ResourceDirectoryD
-				err = binary.Read(f.OSFile, binary.LittleEndian, &innerDir)
+				err = binary.Read(cfg.OSFile, binary.LittleEndian, &innerDir)
 				if nil != err {
 					return vi, keys, err
 				}
@@ -135,7 +135,7 @@ func (f *FileT) GetVersionInfo() (vi map[string]string, keys []string, err error
 				y := 0
 				for y < int(innerDir.NumberOfNamedEntries+innerDir.NumberOfIdEntries) {
 					var entry ResourceDirectoryEntry
-					err = binary.Read(f.OSFile, binary.LittleEndian, &entry)
+					err = binary.Read(cfg.OSFile, binary.LittleEndian, &entry)
 					if nil != err {
 						return vi, keys, err
 					}
@@ -145,11 +145,11 @@ func (f *FileT) GetVersionInfo() (vi map[string]string, keys []string, err error
 					if (entry.OffsetToData&0x80000000)>>31 == 1 {
 						new := entry.OffsetToData&0x7fffffff + idd.VirtualAddress
 						// fmt.Printf("level 2 DirStart 0x%x (%d)\n", new, new)
-						f.OSFile.Seek(int64(new), os.SEEK_SET)
+						cfg.OSFile.Seek(int64(new), os.SEEK_SET)
 					}
 
 					var innerDir ResourceDirectoryD
-					err = binary.Read(f.OSFile, binary.LittleEndian, &innerDir)
+					err = binary.Read(cfg.OSFile, binary.LittleEndian, &innerDir)
 					if nil != err {
 						return vi, keys, err
 					}
@@ -159,7 +159,7 @@ func (f *FileT) GetVersionInfo() (vi map[string]string, keys []string, err error
 					z := 0
 					for z < int(innerDir.NumberOfNamedEntries+innerDir.NumberOfIdEntries) {
 						var entry ResourceDirectoryEntry
-						err = binary.Read(f.OSFile, binary.LittleEndian, &entry)
+						err = binary.Read(cfg.OSFile, binary.LittleEndian, &entry)
 						if nil != err {
 							return vi, keys, err
 						}
@@ -169,21 +169,21 @@ func (f *FileT) GetVersionInfo() (vi map[string]string, keys []string, err error
 
 						// find offset of VS_VERSION_INFO
 						off := int64(entry.OffsetToData + idd.VirtualAddress)
-						viPos, viLen, err := f.FindVerInfoOffset(off, section.SectionHeader.Offset, section.SectionHeader.VirtualAddress)
+						viPos, viLen, err := cfg.FindVerInfoOffset(off, section.SectionHeader.Offset, section.SectionHeader.VirtualAddress)
 						if nil != err {
 							return vi, keys, err
 						}
 						// fmt.Printf("VerInfo Struct filePos: 0x%x (%d)\n", viPos, viPos)
 
-						f.OSFile.Seek(viPos, os.SEEK_SET)
+						cfg.OSFile.Seek(viPos, os.SEEK_SET)
 						b := make([]byte, viLen)
-						err = binary.Read(f.OSFile, binary.LittleEndian, &b)
+						err = binary.Read(cfg.OSFile, binary.LittleEndian, &b)
 						if nil != err {
 							return vi, keys, err
 						}
 						// fmt.Printf("%s\n", b)
 
-						if f.Verbose {
+						if cfg.Verbose {
 							fmt.Printf("  %s\n", hex.Dump(b))
 						}
 
@@ -193,14 +193,14 @@ func (f *FileT) GetVersionInfo() (vi map[string]string, keys []string, err error
 						}
 						return vi, keys, nil
 					}
-					y += 1
+					y++
 				}
 			}
 		}
-		x += 1
+		x++
 	}
 
-	return vi, keys, nil
+	return vi, keys, fmt.Errorf("no version info found")
 }
 
 func parseVersionInfo(vi []byte, versionInfo map[string]string) (map[string]string, error) {

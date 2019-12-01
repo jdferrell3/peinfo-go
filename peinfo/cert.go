@@ -71,11 +71,11 @@ func readCert(fh *os.File, offset int64, size int64) (cert CertDetails, err erro
 	return c, nil
 }
 
-func (f *FileT) VerifyCert(validateExpiredChain bool) (cert *x509.Certificate, verified bool, expired bool, err error) {
+func (cfg *ConfigT) VerifyCert(validateExpiredChain bool) (cert *x509.Certificate, verified bool, expired bool, err error) {
 	expired = true
 
-	idd := f.FindDataDirectory(pe.IMAGE_DIRECTORY_ENTRY_SECURITY)
-	if f.Verbose {
+	idd := cfg.FindDataDirectory(pe.IMAGE_DIRECTORY_ENTRY_SECURITY)
+	if cfg.Verbose {
 		fmt.Printf("IMAGE_DIRECTORY_ENTRY_SECURITY virtual address: %d\n", idd.VirtualAddress)
 		fmt.Printf("IMAGE_DIRECTORY_ENTRY_SECURITY size: %d\n", idd.Size)
 	}
@@ -85,7 +85,7 @@ func (f *FileT) VerifyCert(validateExpiredChain bool) (cert *x509.Certificate, v
 		return nil, false, expired, err
 	}
 
-	c, err := readCert(f.OSFile, int64(idd.VirtualAddress), int64(idd.Size))
+	c, err := readCert(cfg.OSFile, int64(idd.VirtualAddress), int64(idd.Size))
 	if nil != err {
 		err = fmt.Errorf("readCert failed: %s", err)
 		return nil, false, expired, err
