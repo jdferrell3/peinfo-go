@@ -3,13 +3,10 @@ package peinfo
 import (
 	// "bytes"
 	"crypto/x509"
-	"crypto/x509/pkix"
 	"debug/pe"
 	"encoding/binary"
-	"errors"
 	"fmt"
 	"io/ioutil"
-	"net/http"
 	"os"
 	"path/filepath"
 
@@ -119,7 +116,7 @@ func (cfg *ConfigT) VerifyCert(validateExpiredChain bool) (cert *x509.Certificat
 	}
 
 	for _, url := range cert.CRLDistributionPoints {
-		revoked, ok, err := certIsRevokedCRL(cert, url)
+		revoked, ok, err := isCertRevoked(cert, url)
 		if !revoked && !ok {
 			return cert, false, expired, err
 		}
