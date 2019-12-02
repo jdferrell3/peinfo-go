@@ -21,11 +21,11 @@ func main() {
 	var showImports bool
 	var verbose bool
 	var versionInfo bool
-	flag.BoolVar(&extractCert, "extractCert", false, "extract cert from binary")
-	flag.StringVar(&certDir, "certDir", "", "root CA dir")
+	flag.BoolVar(&extractCert, "extractcert", false, "extract cert from binary")
+	flag.StringVar(&certDir, "certdir", "", "root CA dir")
 	flag.BoolVar(&showImports, "imports", false, "show imports")
 	flag.BoolVar(&verbose, "verbose", false, "verbose")
-	flag.BoolVar(&versionInfo, "versionInfo", false, "show version info")
+	flag.BoolVar(&versionInfo, "versioninfo", false, "show version info")
 	flag.Parse()
 
 	if len(flag.Args()) == 0 {
