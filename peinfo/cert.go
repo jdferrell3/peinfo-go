@@ -68,8 +68,7 @@ func readCert(fh *os.File, offset int64, size int64) (cert CertDetails, err erro
 	return c, nil
 }
 
-func (cfg *ConfigT) VerifyCert(validateExpiredChain bool) (cert *x509.Certificate, verified bool, expired bool, err error) {
-	expired = true
+func (cfg *ConfigT) VerifyCert(validateExpiredChain bool) (cert *x509.Certificate, details pkcs7.CertDetails, err error) {
 
 	idd := cfg.FindDataDirectory(pe.IMAGE_DIRECTORY_ENTRY_SECURITY)
 	if cfg.Verbose {
@@ -79,17 +78,17 @@ func (cfg *ConfigT) VerifyCert(validateExpiredChain bool) (cert *x509.Certificat
 
 	if int64(idd.VirtualAddress) == 0 {
 		err = fmt.Errorf("IMAGE_DIRECTORY_ENTRY_SECURITY not found")
-		return nil, false, expired, err
+		return nil, details, err
 	}
 
 	c, err := readCert(cfg.OSFile, int64(idd.VirtualAddress), int64(idd.Size))
 	if nil != err {
 		err = fmt.Errorf("readCert failed: %s", err)
-		return nil, false, expired, err
+		return nil, details, err
 	}
 
 	if c.CertificateType != WIN_CERT_TYPE_PKCS_SIGNED_DATA {
-		return nil, false, expired, fmt.Errorf("only pkcs certificates supported (cert type = %d)", c.CertificateType)
+		return nil, details, fmt.Errorf("only pkcs certificates supported (cert type = %d)", c.CertificateType)
 	}
 
 	if cfg.ExtractCert {
@@ -100,42 +99,42 @@ func (cfg *ConfigT) VerifyCert(validateExpiredChain bool) (cert *x509.Certificat
 
 	p7, err := pkcs7.Parse(c.DER)
 	if nil != err {
-		return nil, false, expired, err
+		return nil, details, err
 	}
 
 	cert = p7.GetOnlySigner()
 
 	cp, err := getCertPool(cfg.RootCertDir)
 	if nil != err {
-		return nil, false, expired, err
+		return nil, details, err
 	}
 
-	expired, err = p7.VerifyWithChain(cp, validateExpiredChain)
+	details, err = p7.VerifyWithChain(cp, validateExpiredChain)
 	if nil == err {
-		verified = true
+		details.Verified = true
 	}
 
 	for _, url := range cert.CRLDistributionPoints {
 		revoked, ok, err := isCertRevoked(cert, url)
 		if !revoked && !ok {
-			return cert, false, expired, err
+			return cert, details, err
 		}
 		if revoked && ok {
-			return cert, false, expired, fmt.Errorf("cert revoked: %v", err)
+			return cert, details, fmt.Errorf("cert revoked: %v", err)
 		}
 		if revoked && !ok {
-			return cert, false, expired, err
+			return cert, details, err
 		}
 
 	}
 
-	return cert, verified, expired, err
+	return cert, details, err
 }
 
 func getCertPool(certDir string) (*x509.CertPool, error) {
 	var cp *x509.CertPool
 
-	// no CA store specifid, use system pool
+	// no CA store specified, use system pool
 	if certDir == "" {
 		cp, err := x509.SystemCertPool()
 		if nil != err {

@@ -44,7 +44,7 @@ func main() {
 	fmt.Printf("Characteristics: %v\n", file.GetCharacteristics())
 	fmt.Printf("Subsystem: %v\n", file.GetImageSubSystem())
 
-	cert, verified, expired, err := file.VerifyCert(true)
+	cert, details, err := file.VerifyCert(true)
 	if cert != nil {
 		fmt.Printf("\nCert:\n")
 		fmt.Printf("  subject: %v\n", cert.Subject)
@@ -52,7 +52,11 @@ func main() {
 		fmt.Printf("  not before: %v\n", cert.NotBefore)
 		fmt.Printf("  not after: %v\n", cert.NotAfter)
 		fmt.Printf("  CRL: %v\n", cert.CRLDistributionPoints)
-		fmt.Printf("  verified: %v (chain expired: %v)\n", verified, expired)
+		fmt.Printf("  verified: %v (chain expired: %v)\n", details.Verified, details.Expired)
+		fmt.Printf("  Chain:\n")
+		for _, c := range details.Chains[0] {
+			fmt.Printf("    - %+v (%+v)\n", c.Subject.CommonName, c.Issuer.CommonName)
+		}
 	}
 	if nil != err {
 		fmt.Printf("  error: %s\n", err)
