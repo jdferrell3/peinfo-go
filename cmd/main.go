@@ -53,9 +53,11 @@ func main() {
 		fmt.Printf("  not after: %v\n", cert.NotAfter)
 		fmt.Printf("  CRL: %v\n", cert.CRLDistributionPoints)
 		fmt.Printf("  verified: %v (chain expired: %v)\n", details.Verified, details.Expired)
-		fmt.Printf("  Chain:\n")
-		for _, c := range details.Chains[0] {
-			fmt.Printf("    - %+v (%+v)\n", c.Subject.CommonName, c.Issuer.CommonName)
+		if len(details.Chains) > 0 {
+			fmt.Printf("  Chain:\n")
+			for _, c := range details.Chains[0] {
+				fmt.Printf("    - %+v (%+v)\n", c.Subject.CommonName, c.Issuer.CommonName)
+			}
 		}
 	}
 	if nil != err {
