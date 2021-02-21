@@ -216,8 +216,10 @@ func parseVersionInfo(vi []byte, versionInfo map[string]string) (map[string]stri
 
 	divide := bytes.Split(stringFileInfo, []byte{0x0, 0x1, 0x0})
 
-	langCharSet := trimSlice(divide[1])
-	versionInfo["langCharSet"] = string(langCharSet)
+	if len(divide) > 2 {
+		langCharSet := trimSlice(divide[1])
+		versionInfo["langCharSet"] = string(langCharSet)
+	}
 
 	// check for slice out of bounds
 	if len(divide) < 3 {
