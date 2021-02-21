@@ -6,10 +6,13 @@ import (
 	"debug/pe"
 	"encoding/binary"
 	"fmt"
+	"io/ioutil"
 	"os"
+	"path/filepath"
 
 	// "github.com/fullsailor/pkcs7"
-	"go.mozilla.org/pkcs7"
+	// "go.mozilla.org/pkcs7"
+	"github.com/jdferrell3/pkcs7"
 )
 
 const (
@@ -65,46 +68,110 @@ func readCert(fh *os.File, offset int64, size int64) (cert CertDetails, err erro
 	return c, nil
 }
 
-func (f *FileT) VerifyCert() (cert *x509.Certificate, verified bool, err error) {
-	idd := f.FindDataDirectory(pe.IMAGE_DIRECTORY_ENTRY_SECURITY)
-	if f.Verbose {
+func (cfg *ConfigT) VerifyCert(validateExpiredChain bool) (cert *x509.Certificate, details pkcs7.CertDetails, err error) {
+
+	idd := cfg.FindDataDirectory(pe.IMAGE_DIRECTORY_ENTRY_SECURITY)
+	if cfg.Verbose {
 		fmt.Printf("IMAGE_DIRECTORY_ENTRY_SECURITY virtual address: %d\n", idd.VirtualAddress)
 		fmt.Printf("IMAGE_DIRECTORY_ENTRY_SECURITY size: %d\n", idd.Size)
 	}
 
-	c, err := readCert(f.OSFile, int64(idd.VirtualAddress), int64(idd.Size))
+	if int64(idd.VirtualAddress) == 0 {
+		err = fmt.Errorf("IMAGE_DIRECTORY_ENTRY_SECURITY not found")
+		return nil, details, err
+	}
+
+	c, err := readCert(cfg.OSFile, int64(idd.VirtualAddress), int64(idd.Size))
 	if nil != err {
 		err = fmt.Errorf("readCert failed: %s", err)
-		return nil, false, err
+		return nil, details, err
 	}
 
 	if c.CertificateType != WIN_CERT_TYPE_PKCS_SIGNED_DATA {
-		return nil, false, fmt.Errorf("only pkcs certificates supported (cert type = %d)", c.CertificateType)
+		return nil, details, fmt.Errorf("only pkcs certificates supported (cert type = %d)", c.CertificateType)
 	}
 
-	if f.ExtractCert {
-		f, _ := os.Create(fmt.Sprintf("%s.cer", f.FileName))
+	if cfg.ExtractCert {
+		f, _ := os.Create(fmt.Sprintf("%s.cer", cfg.FileName))
 		defer f.Close()
 		_, _ = f.Write(c.DER)
 	}
 
 	p7, err := pkcs7.Parse(c.DER)
 	if nil != err {
-		return nil, false, err
+		return nil, details, err
 	}
 
 	cert = p7.GetOnlySigner()
 
-	cp, err := x509.SystemCertPool()
+	cp, err := getCertPool(cfg.RootCertDir)
 	if nil != err {
-		return nil, false, err
+		return nil, details, err
 	}
-	// cp := x509.NewCertPool()
 
-	err = p7.VerifyWithChain(cp)
+	details, err = p7.VerifyWithChain(cp, validateExpiredChain)
 	if nil == err {
-		verified = true
+		details.Verified = true
 	}
 
-	return cert, verified, err
+	for _, url := range cert.CRLDistributionPoints {
+		revoked, ok, err := isCertRevoked(cert, url)
+		if !revoked && !ok {
+			return cert, details, err
+		}
+		if revoked && ok {
+			return cert, details, fmt.Errorf("cert revoked: %v", err)
+		}
+		if revoked && !ok {
+			return cert, details, err
+		}
+
+	}
+
+	return cert, details, err
+}
+
+func getCertPool(certDir string) (*x509.CertPool, error) {
+	var cp *x509.CertPool
+
+	// no CA store specified, use system pool
+	if certDir == "" {
+		cp, err := x509.SystemCertPool()
+		if nil != err {
+			e := fmt.Errorf("tried system cert pool: %w", err)
+			return nil, e
+		}
+		return cp, nil
+	}
+
+	cp = x509.NewCertPool()
+
+	files, err := ioutil.ReadDir(certDir)
+	if nil != err {
+		return nil, err
+	}
+
+	appendedCert := false
+	for _, file := range files {
+		if !file.IsDir() {
+			ext := filepath.Ext(file.Name())
+			if ext == ".cer" || ext == ".crt" {
+				dat, err := ioutil.ReadFile(filepath.Join(certDir, file.Name()))
+				if nil != err {
+					return cp, err
+				}
+				if !cp.AppendCertsFromPEM(dat) {
+					err = fmt.Errorf("failed to append certs")
+					return cp, err
+				}
+				appendedCert = true
+			}
+		}
+	}
+
+	if !appendedCert {
+		return nil, fmt.Errorf("certdir: %v; no CA certs added to pool", certDir)
+	}
+
+	return cp, nil
 }

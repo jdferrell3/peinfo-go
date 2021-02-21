@@ -1,12 +1,10 @@
 package main
 
 import (
-	"debug/pe"
 	"flag"
 	"fmt"
 	"log"
 	"os"
-	"path/filepath"
 
 	"github.com/jdferrell3/peinfo-go/peinfo"
 )
@@ -18,12 +16,16 @@ func checkErr(err error) {
 }
 
 func main() {
+	var certDir string
 	var extractCert bool
 	var showImports bool
 	var verbose bool
-	flag.BoolVar(&extractCert, "extractCert", false, "extract cert from binary")
+	var versionInfo bool
+	flag.BoolVar(&extractCert, "extractcert", false, "extract cert from binary")
+	flag.StringVar(&certDir, "certdir", "", "root CA dir")
 	flag.BoolVar(&showImports, "imports", false, "show imports")
 	flag.BoolVar(&verbose, "verbose", false, "verbose")
+	flag.BoolVar(&versionInfo, "versioninfo", true, "show version info")
 	flag.Parse()
 
 	if len(flag.Args()) == 0 {
@@ -33,19 +35,8 @@ func main() {
 
 	filePath := flag.Args()[0]
 
-	fh, err := os.Open(filePath)
+	file, err := peinfo.Initialize(filePath, verbose, certDir, extractCert)
 	checkErr(err)
-
-	tempPE, err := pe.NewFile(fh)
-	checkErr(err)
-
-	file := peinfo.FileT{
-		FileName:    filepath.Base(filePath),
-		OSFile:      fh,
-		PEFile:      tempPE,
-		Verbose:     verbose,
-		ExtractCert: extractCert,
-	}
 
 	fmt.Printf("type: %s\n", file.GetPEType())
 
@@ -53,28 +44,37 @@ func main() {
 	fmt.Printf("Characteristics: %v\n", file.GetCharacteristics())
 	fmt.Printf("Subsystem: %v\n", file.GetImageSubSystem())
 
-	cert, verified, err := file.VerifyCert()
+	cert, details, err := file.VerifyCert(true)
 	if cert != nil {
 		fmt.Printf("\nCert:\n")
 		fmt.Printf("  subject: %v\n", cert.Subject)
 		fmt.Printf("  issuer: %v\n", cert.Issuer)
 		fmt.Printf("  not before: %v\n", cert.NotBefore)
 		fmt.Printf("  not after: %v\n", cert.NotAfter)
-		fmt.Printf("  verified: %v\n", verified)
+		fmt.Printf("  CRL: %v\n", cert.CRLDistributionPoints)
+		fmt.Printf("  verified: %v (chain expired: %v)\n", details.Verified, details.Expired)
+		if len(details.Chains) > 0 {
+			fmt.Printf("  Chain:\n")
+			for _, c := range details.Chains[0] {
+				fmt.Printf("    - %+v (%+v)\n", c.Subject.CommonName, c.Issuer.CommonName)
+			}
+		}
 	}
 	if nil != err {
 		fmt.Printf("  error: %s\n", err)
 	}
 
-	vi, keys, err := file.GetVersionInfo()
-	if nil == err {
-		fmt.Printf("\nVersion Info:\n")
+	if versionInfo {
+		vi, keys, err := file.GetVersionInfo()
+		if nil == err && len(keys) > 0 {
+			fmt.Printf("\nVersion Info:\n")
 
-		for _, key := range keys {
-			fmt.Printf(" %-20s : %s\n", key, vi[key])
+			for _, key := range keys {
+				fmt.Printf(" %-20s : %s\n", key, vi[key])
+			}
+		} else {
+			fmt.Printf("Error getting version info: %s\n", err)
 		}
-	} else {
-		fmt.Printf("Error getting version info: %s\n", err)
 	}
 
 	if showImports {
