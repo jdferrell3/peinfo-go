@@ -25,7 +25,7 @@ func main() {
 	flag.StringVar(&certDir, "certdir", "", "root CA dir")
 	flag.BoolVar(&showImports, "imports", false, "show imports")
 	flag.BoolVar(&verbose, "verbose", false, "verbose")
-	flag.BoolVar(&versionInfo, "versioninfo", false, "show version info")
+	flag.BoolVar(&versionInfo, "versioninfo", true, "show version info")
 	flag.Parse()
 
 	if len(flag.Args()) == 0 {
