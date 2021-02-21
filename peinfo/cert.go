@@ -138,7 +138,8 @@ func getCertPool(certDir string) (*x509.CertPool, error) {
 	if certDir == "" {
 		cp, err := x509.SystemCertPool()
 		if nil != err {
-			return nil, err
+			e := fmt.Errorf("tried system cert pool: %w", err)
+			return nil, e
 		}
 		return cp, nil
 	}
@@ -169,7 +170,7 @@ func getCertPool(certDir string) (*x509.CertPool, error) {
 	}
 
 	if !appendedCert {
-		return nil, fmt.Errorf("no CA certs added to pool")
+		return nil, fmt.Errorf("certdir: %v; no CA certs added to pool", certDir)
 	}
 
 	return cp, nil
